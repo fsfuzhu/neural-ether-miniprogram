@@ -1,0 +1,150 @@
+.history-page {
+  min-height: 100vh;
+}
+.history-scroll {
+  height: 100vh;
+}
+
+/* ---- 页面标题 ---- */
+.page-header {
+  padding: 40rpx 40rpx 20rpx;
+}
+.page-title {
+  display: block;
+  font-size: 56rpx;
+  color: var(--color-primary);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.title-accent {
+  width: 80rpx;
+  height: 6rpx;
+  background-color: var(--color-secondary);
+  border-radius: 4rpx;
+  margin-top: 24rpx;
+}
+
+/* ---- 空状态 ---- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 40rpx;
+}
+.empty-icon {
+  font-size: 80rpx;
+  color: rgba(22, 40, 57, 0.12);
+  margin-bottom: 32rpx;
+}
+.empty-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 12rpx;
+}
+.empty-desc {
+  display: block;
+  font-size: 24rpx;
+  color: var(--color-on-surface-variant);
+  opacity: 0.6;
+}
+
+/* ---- 对话列表 ---- */
+.conv-list {
+  padding: 16rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.conv-item {
+  display: flex;
+  align-items: center;
+  padding: 32rpx;
+  background-color: var(--color-surface-container-lowest);
+  border-radius: 28rpx;
+  border: 1rpx solid rgba(196, 198, 205, 0.08);
+  box-shadow: 0 2rpx 8rpx rgba(22, 40, 57, 0.03);
+}
+.conv-item:active {
+  background-color: var(--color-surface-container-low);
+}
+
+/* 头像 */
+.conv-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 20rpx;
+  background-color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+.conv-avatar-icon {
+  font-size: 32rpx;
+  color: #ffffff;
+}
+
+/* 信息 */
+.conv-info {
+  flex: 1;
+  overflow: hidden;
+}
+.conv-top-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
+}
+.conv-agent-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.conv-model {
+  font-size: 18rpx;
+  color: var(--color-on-surface-variant);
+  opacity: 0.5;
+  background-color: var(--color-surface-container-high);
+  padding: 2rpx 12rpx;
+  border-radius: 8rpx;
+}
+.conv-preview {
+  display: block;
+  font-size: 24rpx;
+  color: var(--color-on-surface-variant);
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 6rpx;
+}
+.conv-meta {
+  display: block;
+  font-size: 20rpx;
+  color: var(--color-on-surface-variant);
+  opacity: 0.4;
+}
+
+/* 删除按钮 */
+.conv-actions {
+  margin-left: 16rpx;
+  flex-shrink: 0;
+}
+.conv-delete {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.conv-delete:active {
+  background-color: rgba(176, 45, 33, 0.08);
+}
+.delete-icon {
+  font-size: 36rpx;
+  color: var(--color-outline-variant);
+}

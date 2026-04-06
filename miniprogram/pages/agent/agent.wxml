@@ -1,0 +1,42 @@
+<view class="agent-page paper-bg">
+  <scroll-view scroll-y="true" enhanced="true" show-scrollbar="false" class="agent-scroll">
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <text class="page-title font-headline">智能体</text>
+      <view class="title-accent"></view>
+      <text class="page-subtitle">选择一位专属顾问，开始深度对话。</text>
+    </view>
+
+    <!-- 智能体列表 -->
+    <view class="section">
+
+      <view class="agents-grid">
+        <view
+          wx:for="{{agents}}"
+          wx:key="name"
+          class="agent-card"
+          bindtap="onAgentTap"
+          data-index="{{index}}"
+        >
+          <view class="agent-avatar-wrap">
+            <image class="agent-avatar" src="{{item.image}}" mode="aspectFill" />
+            <view wx:if="{{item.recommended}}" class="agent-badge">推荐</view>
+          </view>
+          <text class="agent-name">{{item.name}}</text>
+          <text class="agent-desc">{{item.desc}}</text>
+          <view class="agent-btn">
+            <text>开启对话</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部占位: TabBar + 安全区 -->
+    <view style="height: 320rpx;"></view>
+  </scroll-view>
+
+  <!-- FAB 创建按钮 -->
+  <view class="fab" bindtap="onCreateAgent">
+    <text class="fab-icon">+</text>
+  </view>
+</view>

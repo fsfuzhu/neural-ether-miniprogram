@@ -1,0 +1,44 @@
+{
+  "pages": [
+    "pages/chat/chat",
+    "pages/agent/agent",
+    "pages/history/history",
+    "pages/me/me",
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#fbf9f4",
+    "navigationBarTitleText": "Neural Ether",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#fbf9f4",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#43474c",
+    "selectedColor": "#b02d21",
+    "backgroundColor": "#fbf9f4",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/chat/chat",
+        "text": "对话"
+      },
+      {
+        "pagePath": "pages/agent/agent",
+        "text": "智能体"
+      },
+      {
+        "pagePath": "pages/history/history",
+        "text": "历史"
+      },
+      {
+        "pagePath": "pages/me/me",
+        "text": "我的"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

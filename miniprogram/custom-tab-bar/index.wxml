@@ -1,0 +1,48 @@
+<view class="tab-bar">
+  <view
+    wx:for="{{list}}"
+    wx:key="index"
+    class="tab-item {{selected === index ? 'active' : ''}}"
+    data-path="{{item.pagePath}}"
+    data-index="{{index}}"
+    bindtap="switchTab"
+  >
+    <!-- 对话图标 -->
+    <view wx:if="{{item.iconType === 'chat'}}" class="tab-icon">
+      <view class="icon-chat {{selected === index ? 'icon-active' : ''}}">
+        <view class="chat-bubble"></view>
+        <view class="chat-tail"></view>
+      </view>
+    </view>
+
+    <!-- 智能体图标 -->
+    <view wx:elif="{{item.iconType === 'agent'}}" class="tab-icon">
+      <view class="icon-agent {{selected === index ? 'icon-active' : ''}}">
+        <view class="agent-head"></view>
+        <view class="agent-antenna"></view>
+        <view class="agent-eye left"></view>
+        <view class="agent-eye right"></view>
+      </view>
+    </view>
+
+    <!-- 历史图标 -->
+    <view wx:elif="{{item.iconType === 'history'}}" class="tab-icon">
+      <view class="icon-history {{selected === index ? 'icon-active' : ''}}">
+        <view class="history-circle"></view>
+        <view class="history-hand-h"></view>
+        <view class="history-hand-m"></view>
+      </view>
+    </view>
+
+    <!-- 我的图标 -->
+    <view wx:elif="{{item.iconType === 'me'}}" class="tab-icon">
+      <view class="icon-me {{selected === index ? 'icon-active' : ''}}">
+        <view class="me-head"></view>
+        <view class="me-body"></view>
+      </view>
+    </view>
+
+    <text class="tab-label {{selected === index ? 'label-active' : ''}}">{{item.text}}</text>
+    <view wx:if="{{selected === index}}" class="tab-dot"></view>
+  </view>
+</view>

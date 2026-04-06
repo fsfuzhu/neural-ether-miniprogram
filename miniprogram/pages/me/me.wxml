@@ -1,0 +1,44 @@
+<view class="me-page paper-bg">
+  <scroll-view scroll-y="true" enhanced="true" show-scrollbar="false" class="me-scroll">
+    <!-- 用户资料卡 -->
+    <view class="profile-section">
+      <view class="profile-card">
+        <view class="ink-bleed profile-ink"></view>
+        <view class="avatar-wrap">
+          <view class="avatar-glow"></view>
+          <image class="avatar-img" src="{{userInfo.avatar}}" mode="aspectFill" />
+        </view>
+        <text class="profile-name font-headline" bindtap="onEditName">{{userInfo.name}} ✎</text>
+        <text class="profile-subtitle">{{userInfo.subtitle}}</text>
+      </view>
+    </view>
+
+    <!-- 功能菜单 -->
+    <view class="menu-section">
+      <view
+        wx:for="{{menuItems}}"
+        wx:key="label"
+        class="menu-item"
+        bindtap="onMenuTap"
+        data-index="{{index}}"
+      >
+        <view class="menu-icon-wrap">
+          <text class="menu-icon">{{item.icon}}</text>
+        </view>
+        <view class="menu-info">
+          <text class="menu-label">{{item.label}}</text>
+          <text class="menu-desc">{{item.desc}}</text>
+        </view>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+
+    <!-- 版本信息 -->
+    <view class="footer-info">
+      <text class="footer-brand font-headline">Neural Ether</text>
+      <text class="footer-version">v1.0.0 · Powered by CloudBase</text>
+    </view>
+
+    <view style="height: 320rpx;"></view>
+  </scroll-view>
+</view>

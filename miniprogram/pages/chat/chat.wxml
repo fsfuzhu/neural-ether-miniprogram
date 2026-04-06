@@ -1,0 +1,100 @@
+<view class="chat-page paper-bg">
+  <!-- 模型指示器 -->
+  <view class="model-indicator" bindtap="toggleModelPicker">
+    <view class="model-dot animate-pulse"></view>
+    <text class="model-name">{{selectedModel.name}}</text>
+    <text class="model-arrow {{showModelPicker ? 'arrow-up' : ''}}">▾</text>
+  </view>
+
+  <!-- 模型选择下拉 -->
+  <view wx:if="{{showModelPicker}}" class="model-overlay" bindtap="closeModelPicker"></view>
+  <view wx:if="{{showModelPicker}}" class="model-dropdown">
+    <view
+      wx:for="{{models}}"
+      wx:key="id"
+      class="model-option {{selectedModel.id === item.id ? 'model-selected' : ''}}"
+      data-index="{{index}}"
+      bindtap="selectModel"
+    >
+      <view>
+        <text class="model-option-name">{{item.name}}</text>
+        <text class="model-option-provider">{{item.provider}}</text>
+      </view>
+      <text wx:if="{{selectedModel.id === item.id}}" class="check-mark">✓</text>
+    </view>
+  </view>
+
+  <!-- 消息列表 -->
+  <scroll-view
+    class="message-list"
+    scroll-y="true"
+    enhanced="true"
+    show-scrollbar="false"
+    scroll-into-view="{{toView}}"
+    scroll-with-animation="true"
+  >
+    <!-- 空状态 -->
+    <view wx:if="{{messages.length === 0}}" class="welcome-area">
+      <view class="welcome-icon-wrap">
+        <text class="welcome-icon">✦</text>
+      </view>
+      <text class="welcome-title font-headline">{{agentName}}</text>
+      <text class="welcome-desc">墨色流转间，智慧自然呈现。请问今天有什么可以帮您的？</text>
+    </view>
+
+    <!-- 消息循环 -->
+    <block wx:for="{{messages}}" wx:key="index">
+      <!-- AI 消息 -->
+      <view wx:if="{{item.role === 'ai'}}" class="msg-row msg-ai" id="msg-{{index}}">
+        <view class="msg-sender">
+          <view class="sender-avatar">
+            <text class="sender-icon">✦</text>
+          </view>
+          <text class="sender-name">{{agentName}}</text>
+        </view>
+        <view class="msg-bubble bubble-ai jade-wash">
+          <text wx:if="{{item.content}}" class="msg-text">{{item.content}}</text>
+          <view wx:if="{{item.isStreaming}}" class="typing-dots">
+            <view class="dot dot-1"></view>
+            <view class="dot dot-2"></view>
+            <view class="dot dot-3"></view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 用户消息 -->
+      <view wx:elif="{{item.role === 'user'}}" class="msg-row msg-user" id="msg-{{index}}">
+        <view class="msg-sender sender-right">
+          <text class="sender-name">{{userName}}</text>
+        </view>
+        <view class="msg-bubble bubble-user">
+          <text class="msg-text">{{item.content}}</text>
+        </view>
+      </view>
+    </block>
+
+    <view id="msg-bottom" style="height: 520rpx;"></view>
+  </scroll-view>
+
+  <!-- 输入栏 -->
+  <view class="input-bar">
+    <view class="input-wrap">
+      <text class="input-icon">✦</text>
+      <input
+        class="input-field"
+        placeholder="墨染千秋，语传万象..."
+        placeholder-style="color: rgba(22, 40, 57, 0.25);"
+        value="{{inputValue}}"
+        bindinput="onInputChange"
+        bindconfirm="onSend"
+        disabled="{{isLoading}}"
+      />
+      <view class="input-actions">
+        <view class="send-btn {{isLoading ? 'send-disabled' : ''}}" bindtap="onSend">
+          <text class="send-text">{{isLoading ? '...' : '发送'}}</text>
+          <text wx:if="{{!isLoading}}" class="send-arrow">→</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

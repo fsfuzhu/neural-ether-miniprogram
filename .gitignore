@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+miniprogram_npm/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# WeChat DevTools
+project.private.config.json
+
+# Screenshots (dev only)
+screenshots/
+
+# Build
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Cache
+.cache/
+
+# Skills & Agents (installed via npx)
+.agents/
+skills/
+skills-lock.json
+codebuddy-plugin/
+
+# Claude Code
+.claude/
+
+# MCP config (contains API keys)
+mcp.json
