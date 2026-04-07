@@ -1,14 +1,32 @@
 <view class="me-page paper-bg">
-  <scroll-view scroll-y="true" enhanced="true" show-scrollbar="false" class="me-scroll">
+  <scroll-view scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}" class="me-scroll">
     <!-- 用户资料卡 -->
     <view class="profile-section">
       <view class="profile-card">
         <view class="ink-bleed profile-ink"></view>
-        <view class="avatar-wrap">
-          <view class="avatar-glow"></view>
-          <image class="avatar-img" src="{{userInfo.avatar}}" mode="aspectFill" />
+        <!-- 头像 -->
+        <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+          <view class="avatar-wrap">
+            <view class="avatar-glow"></view>
+            <image wx:if="{{userInfo.avatar}}" class="avatar-img" src="{{userInfo.avatar}}" mode="aspectFill" />
+            <view wx:else class="avatar-placeholder">
+              <text class="avatar-letter">{{userInfo.name[0] || 'U'}}</text>
+            </view>
+          </view>
+          <text class="avatar-hint">点击更换头像</text>
+        </button>
+        <!-- 昵称 -->
+        <view class="nickname-row">
+          <input
+            class="nickname-input font-headline"
+            type="nickname"
+            value="{{userInfo.name}}"
+            placeholder="点击设置昵称"
+            bindchange="onNicknameChange"
+            bindblur="onNicknameChange"
+          />
+          <text class="nickname-edit-icon">✎</text>
         </view>
-        <text class="profile-name font-headline" bindtap="onEditName">{{userInfo.name}} ✎</text>
         <text class="profile-subtitle">{{userInfo.subtitle}}</text>
       </view>
     </view>

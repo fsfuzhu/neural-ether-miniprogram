@@ -11,7 +11,13 @@ Page({
     toView: '',
     agentName: 'Neural AI',
     userName: '墨染千秋',
-    conversationId: ''
+    conversationId: '',
+    keyboardHeight: 0,
+    pendingImage: '',
+    pendingImageBase64: '',
+    showSetup: false,
+    setupAvatar: '',
+    setupName: ''
   },
 
   onLoad() {
@@ -28,6 +34,46 @@ Page({
     }
     this.setData({ userName: app.globalData.userName });
     this._handleChatAction();
+
+    // 首次使用引导
+    if (app.globalData.needSetup) {
+      this.setData({ showSetup: true });
+    }
+  },
+
+  onSetupAvatar: function(e) {
+    this.setData({ setupAvatar: e.detail.avatarUrl || '' });
+  },
+
+  onSetupNickname: function(e) {
+    this.setData({ setupName: (e.detail.value || '').trim() });
+  },
+
+  onSetupNicknameInput: function(e) {
+    this.setData({ setupName: (e.detail.value || '').trim() });
+  },
+
+  onSetupConfirm: function() {
+    var name = this.data.setupName;
+    var avatar = this.data.setupAvatar;
+    if (!name && !avatar) return;
+
+    if (name) {
+      app.globalData.userName = name;
+      wx.setStorageSync('userName', name);
+    }
+    if (avatar) {
+      app.globalData.userAvatar = avatar;
+      wx.setStorageSync('userAvatar', avatar);
+    }
+    app.globalData.needSetup = false;
+    this.setData({ showSetup: false, userName: name || this.data.userName });
+    wx.showToast({ title: '设置成功', icon: 'success' });
+  },
+
+  onSetupSkip: function() {
+    app.globalData.needSetup = false;
+    this.setData({ showSetup: false });
   },
 
   _handleChatAction() {
@@ -47,9 +93,17 @@ Page({
       var convs = app.getConversations();
       var conv = convs.find(function(c) { return c.id === app.globalData.resumeConvId; });
       if (conv) {
+        // 恢复时重新解析 markdown
+        var self = this;
+        var msgs = conv.messages.map(function(m) {
+          if (m.role === 'ai' && m.content) {
+            m.html = self._parseMd(m.content);
+          }
+          return m;
+        });
         this.setData({
           agentName: conv.agentName,
-          messages: conv.messages,
+          messages: msgs,
           conversationId: conv.id,
           isLoading: false
         });
@@ -81,24 +135,122 @@ Page({
     this.setData({ inputValue: e.detail.value });
   },
 
+  onKeyboardHeight(e) {
+    var h = e.detail.height || 0;
+    this.setData({ keyboardHeight: h });
+    if (h > 0) {
+      this.scrollToBottom();
+    }
+  },
+
   scrollToBottom() {
     setTimeout(function() { this.setData({ toView: 'msg-bottom' }); }.bind(this), 50);
   },
 
+  // ---- 图片/文件选择 ----
+  onChooseImage: function() {
+    var self = this;
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['album', 'camera'],
+      sizeType: ['compressed'],
+      success: function(res) {
+        var file = res.tempFiles[0];
+        self.setData({ pendingImage: file.tempFilePath });
+        // 转 base64
+        wx.getFileSystemManager().readFile({
+          filePath: file.tempFilePath,
+          encoding: 'base64',
+          success: function(data) {
+            var ext = file.tempFilePath.split('.').pop().toLowerCase();
+            var mime = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+            self.setData({ pendingImageBase64: 'data:' + mime + ';base64,' + data.data });
+          }
+        });
+      }
+    });
+  },
+
+  onChooseFile: function() {
+    var self = this;
+    wx.chooseMessageFile({
+      count: 1,
+      type: 'file',
+      success: function(res) {
+        var file = res.tempFiles[0];
+        var name = file.name || '';
+        var ext = name.split('.').pop().toLowerCase();
+        // 图片文件走图片流程
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].indexOf(ext) >= 0) {
+          self.setData({ pendingImage: file.path });
+          wx.getFileSystemManager().readFile({
+            filePath: file.path,
+            encoding: 'base64',
+            success: function(data) {
+              var mime = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+              self.setData({ pendingImageBase64: 'data:' + mime + ';base64,' + data.data });
+            }
+          });
+        } else {
+          // 文本文件直接读内容
+          wx.showLoading({ title: '读取文件...' });
+          wx.getFileSystemManager().readFile({
+            filePath: file.path,
+            encoding: 'utf-8',
+            success: function(data) {
+              wx.hideLoading();
+              var text = data.data;
+              if (text.length > 10000) text = text.substring(0, 10000) + '\n...(文件过长，已截断)';
+              var current = self.data.inputValue;
+              self.setData({ inputValue: current + '\n【文件: ' + name + '】\n' + text });
+            },
+            fail: function() {
+              wx.hideLoading();
+              wx.showToast({ title: '不支持该文件格式', icon: 'none' });
+            }
+          });
+        }
+      }
+    });
+  },
+
+  onRemovePending: function() {
+    this.setData({ pendingImage: '', pendingImageBase64: '' });
+  },
+
+  onPreviewImage: function(e) {
+    wx.previewImage({ urls: [e.currentTarget.dataset.url] });
+  },
+
   onSend() {
     var content = this.data.inputValue.trim();
-    if (!content || this.data.isLoading) return;
+    var hasImage = !!this.data.pendingImageBase64;
+    if ((!content && !hasImage) || this.data.isLoading) return;
 
     if (!this.data.conversationId) {
       this.setData({ conversationId: Date.now().toString() });
     }
 
+    // 构建用户消息（带图片预览）
+    var userMsg = { role: 'user', content: content || '(图片)' };
+    if (hasImage) {
+      userMsg.image = this.data.pendingImage;
+      userMsg.imageBase64 = this.data.pendingImageBase64;
+    }
+
     var messages = this.data.messages.concat([
-      { role: 'user', content: content },
+      userMsg,
       { role: 'ai', content: '', isStreaming: true }
     ]);
 
-    this.setData({ messages: messages, inputValue: '', isLoading: true });
+    this.setData({
+      messages: messages,
+      inputValue: '',
+      pendingImage: '',
+      pendingImageBase64: '',
+      isLoading: true
+    });
     this.scrollToBottom();
     this._callAPI();
   },
@@ -113,7 +265,19 @@ Page({
     for (var i = 0; i < msgs.length - 1; i++) {
       var m = msgs[i];
       if (m.role === 'user') {
-        apiMessages.push({ role: 'user', content: m.content });
+        // 多模态消息（文字+图片）
+        if (m.imageBase64) {
+          var parts = [];
+          if (m.content && m.content !== '(图片)') {
+            parts.push({ type: 'text', text: m.content });
+          } else {
+            parts.push({ type: 'text', text: '请分析这张图片' });
+          }
+          parts.push({ type: 'image_url', image_url: { url: m.imageBase64 } });
+          apiMessages.push({ role: 'user', content: parts });
+        } else {
+          apiMessages.push({ role: 'user', content: m.content });
+        }
       } else if (m.role === 'ai' && m.content) {
         apiMessages.push({ role: 'assistant', content: m.content });
       }
@@ -123,168 +287,91 @@ Page({
 
   _callAPI() {
     var self = this;
-    var apiBaseUrl = app.globalData.apiBaseUrl;
-    var apiKey = app.globalData.apiKey;
     var model = this.data.selectedModel.id;
     var apiMessages = this._buildApiMessages();
 
-    // ---- 尝试流式请求 ----
-    var fullContent = '';
-    var sseBuffer = '';
-    var chunkReceived = false;
-    var finished = false;
-
-    var task = wx.request({
-      url: apiBaseUrl + '/v1/chat/completions',
+    wx.request({
+      url: 'https://aitest-1gzevg3q0e108fb1.service.tcloudbase.com/chat',
       method: 'POST',
-      enableChunkedTransfer: true,
-      dataType: 'text',
-      responseType: 'text',
       timeout: 120000,
       header: {
-        'Authorization': 'Bearer ' + apiKey,
         'Content-Type': 'application/json'
       },
       data: {
         model: model,
-        messages: apiMessages,
-        stream: true
+        messages: apiMessages
       },
       success: function(res) {
-        if (finished) return;
-
-        if (chunkReceived) {
-          // 流式已处理，直接结束
-          finished = true;
-          self._finishStream(fullContent);
-          return;
-        }
-
-        // onChunkReceived 没触发，从完整响应中解析
-        finished = true;
-        var text = typeof res.data === 'string' ? res.data : '';
-        var parsed = self._parseSSEText(text);
-        if (parsed) {
-          self._typewriterReveal(parsed);
+        var d = res.data;
+        if (d && d.success && d.data && d.data.content) {
+          self._typewriterReveal(d.data.content);
         } else {
-          // 尝试解析为普通 JSON
-          try {
-            var json = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-            if (json && json.choices && json.choices[0]) {
-              self._typewriterReveal(json.choices[0].message.content || '(无响应)');
-            } else {
-              self._finishStream('(无响应)');
-            }
-          } catch(e) {
-            self._finishStream('(无响应)');
-          }
+          self._finishStream('', d && d.error ? d.error : '(无响应)');
         }
       },
       fail: function(err) {
-        if (finished) return;
-        finished = true;
         self._finishStream('', '请求失败: ' + (err.errMsg || '网络错误'));
-      }
-    });
-
-    // 流式 chunk 处理
-    task.onChunkReceived(function(res) {
-      chunkReceived = true;
-      try {
-        var bytes = new Uint8Array(res.data);
-        var text = '';
-        if (typeof TextDecoder !== 'undefined') {
-          text = new TextDecoder('utf-8').decode(bytes);
-        } else {
-          for (var k = 0; k < bytes.length; k++) {
-            text += String.fromCharCode(bytes[k]);
-          }
-          try { text = decodeURIComponent(escape(text)); } catch(e) {}
-        }
-
-        sseBuffer += text;
-        var lines = sseBuffer.split('\n');
-        sseBuffer = lines.pop() || '';
-
-        var updated = false;
-        for (var j = 0; j < lines.length; j++) {
-          var line = lines[j].trim();
-          if (!line) continue;
-
-          if (line === 'data: [DONE]') {
-            if (!finished) {
-              finished = true;
-              self._finishStream(fullContent);
-            }
-            return;
-          }
-
-          if (line.indexOf('data: ') === 0) {
-            try {
-              var json = JSON.parse(line.substring(6));
-              var delta = json.choices && json.choices[0] && json.choices[0].delta;
-              if (delta && delta.content) {
-                fullContent += delta.content;
-                updated = true;
-              }
-            } catch(e) {}
-          }
-        }
-
-        if (updated) {
-          var messages = self.data.messages.slice();
-          var last = messages.length - 1;
-          messages[last] = { role: 'ai', content: fullContent, isStreaming: true };
-          self.setData({ messages: messages });
-          self.scrollToBottom();
-        }
-      } catch(e) {
-        console.error('chunk error:', e);
       }
     });
   },
 
-  // 从完整 SSE 文本中提取内容
-  _parseSSEText: function(text) {
-    if (!text || text.indexOf('data: ') < 0) return null;
-    var content = '';
+  // ---- Markdown 解析 ----
+  _parseMd: function(text) {
+    if (!text) return '';
     var lines = text.split('\n');
+    var result = [];
     for (var i = 0; i < lines.length; i++) {
-      var line = lines[i].trim();
-      if (line.indexOf('data: ') !== 0) continue;
-      var payload = line.substring(6);
-      if (payload === '[DONE]') continue;
-      try {
-        var json = JSON.parse(payload);
-        var delta = json.choices && json.choices[0] && json.choices[0].delta;
-        if (delta && delta.content) {
-          content += delta.content;
-        }
-        // 也检查 message 格式（非流式）
-        var msg = json.choices && json.choices[0] && json.choices[0].message;
-        if (msg && msg.content) {
-          content += msg.content;
-        }
-      } catch(e) {}
+      var line = lines[i];
+      var trimmed = line.replace(/^\s+/, '');
+
+      if (trimmed.indexOf('### ') === 0) {
+        result.push('<div style="font-weight:700;font-size:15px;margin:10px 0 4px;color:#162839;">' + this._inlineMd(trimmed.substring(4)) + '</div>');
+      } else if (trimmed.indexOf('## ') === 0) {
+        result.push('<div style="font-weight:700;font-size:16px;margin:12px 0 4px;color:#162839;">' + this._inlineMd(trimmed.substring(3)) + '</div>');
+      } else if (trimmed.indexOf('# ') === 0) {
+        result.push('<div style="font-weight:700;font-size:17px;margin:14px 0 6px;color:#162839;">' + this._inlineMd(trimmed.substring(2)) + '</div>');
+      } else if (/^[-*]\s/.test(trimmed)) {
+        result.push('<div style="padding-left:14px;margin:3px 0;"><span style="margin-right:6px;">•</span>' + this._inlineMd(trimmed.substring(2)) + '</div>');
+      } else if (/^\d+\.\s/.test(trimmed)) {
+        var dotIdx = trimmed.indexOf('. ');
+        result.push('<div style="padding-left:14px;margin:3px 0;">' + trimmed.substring(0, dotIdx + 2) + this._inlineMd(trimmed.substring(dotIdx + 2)) + '</div>');
+      } else if (trimmed === '') {
+        result.push('<div style="height:8px;"></div>');
+      } else {
+        result.push('<div style="margin:2px 0;">' + this._inlineMd(line) + '</div>');
+      }
     }
-    return content || null;
+    return result.join('');
+  },
+
+  _inlineMd: function(text) {
+    // HTML escape
+    text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Bold: **text**
+    text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Italic: *text* (not inside **)
+    text = text.replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g, '<em>$1</em>');
+    // Inline code: `text`
+    text = text.replace(/`([^`]+?)`/g, '<span style="background:#eae8e3;padding:1px 5px;border-radius:3px;font-size:13px;font-family:monospace;">$1</span>');
+    return text;
   },
 
   // 打字机效果逐字显示
   _typewriterReveal: function(fullText) {
     var self = this;
     var index = 0;
-    var speed = 20; // 每字 20ms
+    var speed = 20;
 
     function tick() {
-      index += 2; // 每次显示2个字符，加快速度
+      index += 2;
       if (index >= fullText.length) {
         self._finishStream(fullText);
         return;
       }
+      var partial = fullText.substring(0, index);
       var messages = self.data.messages.slice();
       var last = messages.length - 1;
-      messages[last] = { role: 'ai', content: fullText.substring(0, index), isStreaming: true };
+      messages[last] = { role: 'ai', content: partial, html: self._parseMd(partial), isStreaming: true };
       self.setData({ messages: messages });
       self.scrollToBottom();
       self._typeTimer = setTimeout(tick, speed);
@@ -301,9 +388,11 @@ Page({
     var last = messages.length - 1;
     if (last < 0) return;
 
+    var finalText = error || content || '(无响应)';
     messages[last] = {
       role: 'ai',
-      content: error || content || '(无响应)',
+      content: finalText,
+      html: this._parseMd(finalText),
       isStreaming: false
     };
     this.setData({ messages: messages, isLoading: false });

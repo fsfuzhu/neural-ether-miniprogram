@@ -9,12 +9,27 @@ App({
         traceUser: true,
       });
     }
+
+    // 检测是否首次使用
+    var savedName = wx.getStorageSync('userName');
+    var savedAvatar = wx.getStorageSync('userAvatar');
+    if (savedName) {
+      this.globalData.userName = savedName;
+    }
+    if (savedAvatar) {
+      this.globalData.userAvatar = savedAvatar;
+    }
+    if (!savedName && !savedAvatar) {
+      this.globalData.needSetup = true;
+    }
   },
 
   globalData: {
     apiBaseUrl: 'http://15.204.11.218:8317',
     apiKey: 'sk-9da4ea98b368a1e9a4feb3d900bf1a57e70163e3606c27e5bb9124017eb6002e',
+    needSetup: false,
     userName: '墨染千秋',
+    userAvatar: '',
     selectedModel: {
       id: 'gemini-3.1-pro-preview',
       name: 'Gemini 3.1 Pro',

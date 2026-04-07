@@ -1,4 +1,42 @@
 <view class="chat-page paper-bg">
+
+  <!-- 首次使用引导弹窗 -->
+  <view wx:if="{{showSetup}}" class="setup-overlay">
+    <view class="setup-card">
+      <text class="setup-title font-headline">欢迎使用 Neural Ether</text>
+      <text class="setup-desc">设置你的头像和昵称，开始智能对话之旅</text>
+
+      <!-- 选择头像 -->
+      <button class="setup-avatar-btn" open-type="chooseAvatar" bindchooseavatar="onSetupAvatar">
+        <view class="setup-avatar-circle">
+          <image wx:if="{{setupAvatar}}" class="setup-avatar-img" src="{{setupAvatar}}" mode="aspectFill" />
+          <text wx:else class="setup-avatar-plus">+</text>
+        </view>
+        <text class="setup-avatar-hint">点击选择头像</text>
+      </button>
+
+      <!-- 输入昵称 -->
+      <view class="setup-nickname-wrap">
+        <input
+          class="setup-nickname-input"
+          type="nickname"
+          placeholder="点击输入昵称（自动填充微信昵称）"
+          placeholder-style="color: rgba(22,40,57,0.3); font-size: 26rpx;"
+          value="{{setupName}}"
+          bindchange="onSetupNickname"
+          bindinput="onSetupNicknameInput"
+        />
+      </view>
+
+      <!-- 确认按钮 -->
+      <view class="setup-confirm {{setupAvatar && setupName ? '' : 'setup-confirm-disabled'}}" bindtap="onSetupConfirm">
+        <text>开始使用</text>
+      </view>
+
+      <!-- 跳过 -->
+      <text class="setup-skip" bindtap="onSetupSkip">稍后设置</text>
+    </view>
+  </view>
   <!-- 模型指示器 -->
   <view class="model-indicator" bindtap="toggleModelPicker">
     <view class="model-dot animate-pulse"></view>
@@ -27,9 +65,9 @@
   <!-- 消息列表 -->
   <scroll-view
     class="message-list"
-    scroll-y="true"
-    enhanced="true"
-    show-scrollbar="false"
+    scroll-y="{{true}}"
+    enhanced="{{true}}"
+    show-scrollbar="{{false}}"
     scroll-into-view="{{toView}}"
     scroll-with-animation="true"
   >
@@ -53,7 +91,8 @@
           <text class="sender-name">{{agentName}}</text>
         </view>
         <view class="msg-bubble bubble-ai jade-wash">
-          <text wx:if="{{item.content}}" class="msg-text">{{item.content}}</text>
+          <rich-text wx:if="{{item.html}}" class="msg-text" nodes="{{item.html}}"></rich-text>
+          <text wx:elif="{{item.content}}" class="msg-text">{{item.content}}</text>
           <view wx:if="{{item.isStreaming}}" class="typing-dots">
             <view class="dot dot-1"></view>
             <view class="dot dot-2"></view>
@@ -68,26 +107,42 @@
           <text class="sender-name">{{userName}}</text>
         </view>
         <view class="msg-bubble bubble-user">
-          <text class="msg-text">{{item.content}}</text>
+          <image wx:if="{{item.image}}" class="msg-image" src="{{item.image}}" mode="widthFix" bindtap="onPreviewImage" data-url="{{item.image}}" />
+          <text wx:if="{{item.content}}" class="msg-text">{{item.content}}</text>
         </view>
       </view>
     </block>
 
-    <view id="msg-bottom" style="height: 520rpx;"></view>
+    <view id="msg-bottom" style="height: {{keyboardHeight > 0 ? keyboardHeight + 120 + 'px' : '520rpx'}};"></view>
   </scroll-view>
 
   <!-- 输入栏 -->
-  <view class="input-bar">
+  <view class="input-bar" style="bottom: {{keyboardHeight > 0 ? keyboardHeight + 'px' : '200rpx'}};">
+    <!-- 图片预览条 -->
+    <view wx:if="{{pendingImage}}" class="pending-image-bar">
+      <image class="pending-thumb" src="{{pendingImage}}" mode="aspectFill" />
+      <text class="pending-name">已选择图片</text>
+      <text class="pending-remove" bindtap="onRemovePending">✕</text>
+    </view>
     <view class="input-wrap">
-      <text class="input-icon">✦</text>
+      <view class="attach-btns">
+        <view class="attach-btn" bindtap="onChooseImage">
+          <text class="attach-icon">🖼</text>
+        </view>
+        <view class="attach-btn" bindtap="onChooseFile">
+          <text class="attach-icon">📎</text>
+        </view>
+      </view>
       <input
         class="input-field"
-        placeholder="墨染千秋，语传万象..."
+        placeholder="输入消息..."
         placeholder-style="color: rgba(22, 40, 57, 0.25);"
         value="{{inputValue}}"
         bindinput="onInputChange"
         bindconfirm="onSend"
         disabled="{{isLoading}}"
+        adjust-position="{{false}}"
+        bindkeyboardheightchange="onKeyboardHeight"
       />
       <view class="input-actions">
         <view class="send-btn {{isLoading ? 'send-disabled' : ''}}" bindtap="onSend">

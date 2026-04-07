@@ -5,7 +5,7 @@ Page({
     userInfo: {
       name: '墨染千秋',
       subtitle: 'NEO-INK INTELLIGENCE ARCHITECT',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAd8E2NiQsoIbI7gEGakOwvWlUYaT8Tr4kxdQQg5XMGePAKhdZt6rb7U-YFdVotVhZGFAS3g8wtcQj0iQHFl2G4lryjqxixg7fBvZ6jBpgWMAOPzhoHf5R2GDEzhUl-jotPILvFQb1325RPq6_Y2LcTTldWnsRYDE7NBvX1yP_F92w_JY9pT-9TPdoQ8UY9cfHphztij0V13rWBmyXFSggQzMiQvTyDH3-q2IY5q49FadAXksd4oa0-YX-xvlZt8ivgg3ItL1hif4Mk'
+      avatar: ''
     },
     menuItems: [
       { icon: '✎', label: '我的智能体', desc: '管理已创建的智能体' },
@@ -15,35 +15,52 @@ Page({
     ]
   },
 
+  onLoad() {
+    var savedName = wx.getStorageSync('userName');
+    var savedAvatar = wx.getStorageSync('userAvatar');
+    if (savedName) {
+      app.globalData.userName = savedName;
+      this.setData({ 'userInfo.name': savedName });
+    }
+    if (savedAvatar) {
+      app.globalData.userAvatar = savedAvatar;
+      this.setData({ 'userInfo.avatar': savedAvatar });
+    }
+  },
+
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 3 });
     }
-    // 同步用户名
-    this.setData({ 'userInfo.name': app.globalData.userName });
-  },
-
-  onEditName() {
-    const self = this;
-    wx.showModal({
-      title: '修改昵称',
-      editable: true,
-      placeholderText: '请输入新昵称',
-      success(res) {
-        if (res.confirm && res.content && res.content.trim()) {
-          const name = res.content.trim();
-          app.globalData.userName = name;
-          self.setData({ 'userInfo.name': name });
-          wx.showToast({ title: '已更新', icon: 'success' });
-        }
-      }
+    this.setData({
+      'userInfo.name': app.globalData.userName,
+      'userInfo.avatar': app.globalData.userAvatar || ''
     });
   },
 
-  onMenuTap(e) {
-    const idx = e.currentTarget.dataset.index;
+  onChooseAvatar: function(e) {
+    var avatarUrl = e.detail.avatarUrl;
+    if (avatarUrl) {
+      app.globalData.userAvatar = avatarUrl;
+      this.setData({ 'userInfo.avatar': avatarUrl });
+      wx.setStorageSync('userAvatar', avatarUrl);
+      wx.showToast({ title: '头像已更新', icon: 'success' });
+    }
+  },
+
+  onNicknameChange: function(e) {
+    var name = (e.detail.value || '').trim();
+    if (name && name !== this.data.userInfo.name) {
+      app.globalData.userName = name;
+      this.setData({ 'userInfo.name': name });
+      wx.setStorageSync('userName', name);
+      wx.showToast({ title: '昵称已更新', icon: 'success' });
+    }
+  },
+
+  onMenuTap: function(e) {
+    var idx = e.currentTarget.dataset.index;
     if (idx === 1) {
-      // 对话记录
       wx.switchTab({ url: '/pages/history/history' });
     } else {
       wx.showToast({ title: '即将推出', icon: 'none' });
