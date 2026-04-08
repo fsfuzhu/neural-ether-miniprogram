@@ -242,6 +242,15 @@
   white-space: normal;
 }
 
+/* AI 生成的图片 */
+.ai-generated-image {
+  width: 100%;
+  margin-top: 24rpx;
+  border-radius: 20rpx;
+  background-color: rgba(22, 40, 57, 0.04);
+  border: 1rpx solid rgba(196, 198, 205, 0.2);
+}
+
 /* ---- 流式响应 ---- */
 .bubble-ai-rich {
   padding: 44rpx;
@@ -573,4 +582,86 @@
   max-width: 400rpx;
   border-radius: 16rpx;
   margin-bottom: 12rpx;
+}
+
+/* ---- 选中复制弹窗 ---- */
+.select-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(22, 40, 57, 0.55);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 40rpx;
+}
+.select-card {
+  width: 100%;
+  max-height: 80vh;
+  background-color: var(--color-surface-container-lowest);
+  border-radius: 32rpx;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24rpx 80rpx rgba(22, 40, 57, 0.2);
+  overflow: hidden;
+}
+.select-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx 36rpx 20rpx;
+  border-bottom: 1rpx solid rgba(196, 198, 205, 0.12);
+}
+.select-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.05em;
+}
+.select-close {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  color: var(--color-outline-variant);
+}
+.select-textarea {
+  width: 100%;
+  padding: 28rpx 36rpx;
+  font-size: 28rpx;
+  line-height: 1.7;
+  color: var(--color-primary);
+  background-color: var(--color-surface-container-low);
+  box-sizing: border-box;
+  min-height: 240rpx;
+  max-height: 60vh;
+}
+.select-actions {
+  display: flex;
+  padding: 24rpx 36rpx 32rpx;
+  gap: 16rpx;
+}
+.select-btn {
+  flex: 1;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+.select-btn-primary {
+  background-color: var(--color-secondary);
+  color: #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(176, 45, 33, 0.2);
+}
+.select-btn-primary:active {
+  opacity: 0.9;
+  transform: scale(0.98);
 }

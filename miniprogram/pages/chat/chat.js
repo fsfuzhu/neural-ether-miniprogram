@@ -15,6 +15,8 @@ Page({
     keyboardHeight: 0,
     pendingImage: '',
     pendingImageBase64: '',
+    showSelectModal: false,
+    selectModalText: '',
     showSetup: false,
     setupAvatar: '',
     setupName: ''
@@ -89,6 +91,8 @@ Page({
         isLoading: false
       });
       this._systemPrompt = agent.systemPrompt || '';
+      this._imageGeneration = !!agent.imageGeneration;
+      this._imageAspect = agent.imageAspect || '1:1';
     } else if (action === 'resume' && app.globalData.resumeConvId) {
       var convs = app.getConversations();
       var conv = convs.find(function(c) { return c.id === app.globalData.resumeConvId; });
@@ -108,6 +112,8 @@ Page({
           isLoading: false
         });
         this._systemPrompt = conv.systemPrompt || '';
+        this._imageGeneration = !!conv.imageGeneration;
+        this._imageAspect = conv.imageAspect || '1:1';
         this.scrollToBottom();
       }
     }
@@ -223,6 +229,45 @@ Page({
     wx.previewImage({ urls: [e.currentTarget.dataset.url] });
   },
 
+  onCopyMessage: function(e) {
+    var content = e.currentTarget.dataset.content;
+    if (!content) return;
+    var self = this;
+    wx.showActionSheet({
+      itemList: ['复制全文', '选中复制'],
+      success: function(res) {
+        if (res.tapIndex === 0) {
+          wx.setClipboardData({
+            data: content,
+            success: function() {
+              wx.showToast({ title: '已复制', icon: 'success' });
+            }
+          });
+        } else if (res.tapIndex === 1) {
+          self.setData({ selectModalText: content, showSelectModal: true });
+        }
+      }
+    });
+  },
+
+  onSelectModalClose: function() {
+    this.setData({ showSelectModal: false, selectModalText: '' });
+  },
+
+  onSelectModalCopyAll: function() {
+    var self = this;
+    wx.setClipboardData({
+      data: this.data.selectModalText,
+      success: function() {
+        wx.showToast({ title: '已复制', icon: 'success' });
+        self.onSelectModalClose();
+      }
+    });
+  },
+
+  // 阻止背景滚动穿透
+  noop: function() {},
+
   onSend() {
     var content = this.data.inputValue.trim();
     var hasImage = !!this.data.pendingImageBase64;
@@ -287,24 +332,44 @@ Page({
 
   _callAPI() {
     var self = this;
-    var model = this.data.selectedModel.id;
     var apiMessages = this._buildApiMessages();
+    var isImageMode = !!this._imageGeneration;
+
+    // 图片生成模式：用 Nano Banana 2 模型 + modalities
+    var model = isImageMode ? 'gemini-3.1-flash-image' : this.data.selectedModel.id;
+    var body = {
+      model: model,
+      messages: apiMessages
+    };
+    if (isImageMode) {
+      body.modalities = ['image', 'text'];
+      body.image_config = {
+        aspect_ratio: this._imageAspect || '1:1',
+        image_size: '1K'
+      };
+    }
 
     wx.request({
       url: 'https://aitest-1gzevg3q0e108fb1.service.tcloudbase.com/chat',
       method: 'POST',
-      timeout: 120000,
+      timeout: 180000,
       header: {
         'Content-Type': 'application/json'
       },
-      data: {
-        model: model,
-        messages: apiMessages
-      },
+      data: body,
       success: function(res) {
         var d = res.data;
-        if (d && d.success && d.data && d.data.content) {
-          self._typewriterReveal(d.data.content);
+        if (d && d.success && d.data) {
+          var hasImages = d.data.images && d.data.images.length;
+          var content = d.data.content || (hasImages ? '已为你生成图片：' : '');
+          if (hasImages) {
+            // 图片模式：直接收尾，不走打字机
+            self._finishStreamWithImages(content, d.data.images);
+          } else if (content) {
+            self._typewriterReveal(content);
+          } else {
+            self._finishStream('', d.error || '(无响应)');
+          }
         } else {
           self._finishStream('', d && d.error ? d.error : '(无响应)');
         }
@@ -313,6 +378,26 @@ Page({
         self._finishStream('', '请求失败: ' + (err.errMsg || '网络错误'));
       }
     });
+  },
+
+  _finishStreamWithImages: function(content, images) {
+    if (this._typeTimer) {
+      clearTimeout(this._typeTimer);
+      this._typeTimer = null;
+    }
+    var messages = this.data.messages.slice();
+    var last = messages.length - 1;
+    if (last < 0) return;
+    messages[last] = {
+      role: 'ai',
+      content: content,
+      html: this._parseMd(content),
+      images: images,
+      isStreaming: false
+    };
+    this.setData({ messages: messages, isLoading: false });
+    this.scrollToBottom();
+    this._saveCurrentConversation();
   },
 
   // ---- Markdown 解析 ----
@@ -405,14 +490,20 @@ Page({
   _saveCurrentConversation: function() {
     if (!this.data.messages.length) return;
     var lastMsg = this.data.messages[this.data.messages.length - 1];
+    var preview = (lastMsg.content || '').slice(0, 50);
+    if (!preview && lastMsg.images && lastMsg.images.length) {
+      preview = '[图片]';
+    }
     app.saveConversation({
       id: this.data.conversationId,
       agentName: this.data.agentName,
       modelId: this.data.selectedModel.id,
       modelName: this.data.selectedModel.name,
       systemPrompt: this._systemPrompt || '',
+      imageGeneration: !!this._imageGeneration,
+      imageAspect: this._imageAspect || '1:1',
       messages: this.data.messages,
-      lastMessage: lastMsg.content.slice(0, 50),
+      lastMessage: preview,
       updatedAt: Date.now()
     });
   }

@@ -25,7 +25,7 @@ App({
   },
 
   globalData: {
-    apiBaseUrl: 'http://15.204.11.218:8317',
+    apiBaseUrl: 'http://150.109.45.246:8317',
     apiKey: 'sk-9da4ea98b368a1e9a4feb3d900bf1a57e70163e3606c27e5bb9124017eb6002e',
     needSetup: false,
     userName: '墨染千秋',

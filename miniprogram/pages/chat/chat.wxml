@@ -1,5 +1,27 @@
 <view class="chat-page paper-bg">
 
+  <!-- 选中复制弹窗 -->
+  <view wx:if="{{showSelectModal}}" class="select-overlay" bindtap="onSelectModalClose">
+    <view class="select-card" catchtap="noop">
+      <view class="select-header">
+        <text class="select-title">长按选中文字</text>
+        <text class="select-close" bindtap="onSelectModalClose">✕</text>
+      </view>
+      <textarea
+        class="select-textarea"
+        value="{{selectModalText}}"
+        disabled="{{false}}"
+        auto-height="{{true}}"
+        show-confirm-bar="{{false}}"
+      />
+      <view class="select-actions">
+        <view class="select-btn select-btn-primary" bindtap="onSelectModalCopyAll">
+          <text>复制全部</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
   <!-- 首次使用引导弹窗 -->
   <view wx:if="{{showSetup}}" class="setup-overlay">
     <view class="setup-card">
@@ -90,9 +112,24 @@
           </view>
           <text class="sender-name">{{agentName}}</text>
         </view>
-        <view class="msg-bubble bubble-ai jade-wash">
+        <view class="msg-bubble bubble-ai jade-wash" bindlongpress="onCopyMessage" data-content="{{item.content}}">
           <rich-text wx:if="{{item.html}}" class="msg-text" nodes="{{item.html}}"></rich-text>
-          <text wx:elif="{{item.content}}" class="msg-text">{{item.content}}</text>
+          <text wx:elif="{{item.content}}" class="msg-text" user-select="{{true}}" selectable="{{true}}">{{item.content}}</text>
+          <!-- AI 生成的图片 -->
+          <block wx:if="{{item.images && item.images.length}}">
+            <image
+              wx:for="{{item.images}}"
+              wx:for-item="img"
+              wx:for-index="imgIdx"
+              wx:key="imgIdx"
+              class="ai-generated-image"
+              src="{{img}}"
+              mode="widthFix"
+              bindtap="onPreviewImage"
+              data-url="{{img}}"
+              show-menu-by-longpress="{{true}}"
+            />
+          </block>
           <view wx:if="{{item.isStreaming}}" class="typing-dots">
             <view class="dot dot-1"></view>
             <view class="dot dot-2"></view>
@@ -106,9 +143,9 @@
         <view class="msg-sender sender-right">
           <text class="sender-name">{{userName}}</text>
         </view>
-        <view class="msg-bubble bubble-user">
+        <view class="msg-bubble bubble-user" bindlongpress="onCopyMessage" data-content="{{item.content}}">
           <image wx:if="{{item.image}}" class="msg-image" src="{{item.image}}" mode="widthFix" bindtap="onPreviewImage" data-url="{{item.image}}" />
-          <text wx:if="{{item.content}}" class="msg-text">{{item.content}}</text>
+          <text wx:if="{{item.content}}" class="msg-text" user-select="{{true}}" selectable="{{true}}">{{item.content}}</text>
         </view>
       </view>
     </block>
